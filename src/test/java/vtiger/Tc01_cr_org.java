@@ -15,24 +15,28 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
+import com.vtiger.ExcelUtils;
+import com.vtiger.FileUtils;
 import com.vtiger.IAutoconstants;
+import com.vtiger.JavaUtil;
+import com.vtiger.WebDriverUtility;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
+import objectrepo.Createorgpage;
+import objectrepo.HomePage;
+import objectrepo.LoginPage;
+import objectrepo.OrgInfoPage;
 
 
 
 public class Tc01_cr_org {
 
-	public static void main(String[] args) throws Exception {
-		FileInputStream Fis = new FileInputStream(IAutoconstants.profilepath);
-		Properties prop = new Properties();
-		prop.load(Fis);
-		String Value = prop.getProperty("URL");
-		System.out.println(Value);
-
-
+	public static void main(String[] args) throws Throwable {
+		
 		WebDriver driver;
-		String Browser = prop.getProperty("Browser");
+		FileUtils fu=new FileUtils();
+		
+		String Browser = fu.Readdatafromprop("Browser");
 		if(Browser.equals("Chrome")) {
 			WebDriverManager.chromedriver().setup();
 			driver = new ChromeDriver();
@@ -49,27 +53,40 @@ public class Tc01_cr_org {
 		else{
 			driver=new FirefoxDriver();
 		}
-		driver.get(prop.getProperty("URL"));
+		
+		driver.get(fu.Readdatafromprop("URL"));
 		driver.manage().window().maximize();
-		driver.findElement(By.xpath("//input[@name='user_name']")).sendKeys(prop.getProperty("UN"));
-		driver.findElement(By.name("user_password")).sendKeys(prop.getProperty("PW"));
-		driver.findElement(By.id("submitButton")).click();
-		driver.findElement(By.xpath("//a[.='Organizations']")).click();
-		driver.findElement(By.xpath("//img[@title='Create Organization...']")).click();
-		FileInputStream  fisexcel = new FileInputStream(IAutoconstants.excelpath);
-		Workbook bis=WorkbookFactory.create(fisexcel);
+		WebDriverUtility wl= new WebDriverUtility();
+		wl.pageloadtimeout(driver);
+		  
+		LoginPage login=new LoginPage(driver);
 		
-		String s=bis.getSheet("Sheet2").getRow(3).getCell(0).getStringCellValue();
+		login.getUsernametxtfld().sendKeys(fu.Readdatafromprop("UN"));
+		login.getPasswordtxtfld().sendKeys(fu.Readdatafromprop("PW"));
+		login.getLoginbtn().click();
+		HomePage HP =new HomePage(driver);
+		HP.getOrganisationlink().click();
+		OrgInfoPage OIF= new OrgInfoPage(driver);
+		OIF.getCreateorgimg().click();
 		
-		driver.findElement(By.xpath("//input[@name='accountname']")).sendKeys(s);
-		driver.findElement(By.xpath("//input[@class='crmbutton small save']")).click();
+		JavaUtil jv = new JavaUtil();
+//		String s=jv.fakeCompanyName();
+		String s="hddjhfksdkjfh";
+		Thread.sleep(2000);
+		Createorgpage cp=new Createorgpage(driver);
+		cp.getOrgname().sendKeys(s);
+		cp.getOrgSavebutton().click();
 		Thread.sleep(3000);
-		driver.findElement(By.xpath("//a[.='Organizations']")).click();
+		HP.getOrganisationlink().click();
 
 
-		driver.findElement(By.xpath("//input[@class='txtBox']")).sendKeys(s);
-		Select sele = new Select(driver.findElement(By.xpath("//select[@id='bas_searchfield']")));
-		sele.selectByVisibleText("Organization Name");
+		OIF.getSearchtxtbox().sendKeys(s);
+		
+		Thread.sleep(2000);
+		
+		WebElement element = OIF.getOrgtypesdd();
+		wl.Selectfromdd(element, "Organization Name");
+//		
 		
 		driver.findElement(By.xpath("//input[@name='submit']")).click();
 		Thread.sleep(2000);
@@ -84,13 +101,13 @@ public class Tc01_cr_org {
 		else {
 			System.out.println("Tc fail");
 		}
+         Thread.sleep(2000);
+		
+		WebElement path = HP.getSignoutimg();
+		wl.movetolement(driver, path);
+		HP.getSignoutlink().click();
 
-		Actions action = new Actions(driver);
-		WebElement path = driver.findElement(By.xpath("//img[@src='themes/softed/images/user.PNG']"));
-		action.moveToElement(path).build().perform();
-		driver.findElement(By.xpath("//a[text()='Sign Out']")).click();
-
-
+        driver.close();
 	}
 
 }

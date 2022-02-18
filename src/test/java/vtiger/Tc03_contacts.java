@@ -17,8 +17,13 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
 import com.vtiger.IAutoconstants;
+import com.vtiger.JavaUtil;
+import com.vtiger.WebDriverUtility;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
+import objectrepo.CreateConPage;
+import objectrepo.HomePage;
+import objectrepo.LoginPage;
 
 public class Tc03_contacts {
 
@@ -26,74 +31,78 @@ public class Tc03_contacts {
 		FileInputStream fis = new FileInputStream(IAutoconstants.profilepath);
 		Properties prop = new Properties();
 		prop.load(fis);
-       WebDriver driver;
-       String Browser=prop.getProperty("Browser");
-       if(Browser.equals("Chrome")) {
-    	   WebDriverManager.chromedriver().setup();
-    	   driver=new ChromeDriver();
-    	   
-       }
-       
-       else  if(Browser.equals("Firefox")) {
-    	   driver=new FirefoxDriver();
-    	   WebDriverManager.firefoxdriver().setup();
-	}
-       else  if(Browser.equals("Edge")) {
-    	   driver=new EdgeDriver();
-    	   WebDriverManager.firefoxdriver().setup();
-}
-       else  {
-    	   driver=new FirefoxDriver();
-    	   WebDriverManager.firefoxdriver().setup();
-	}
-       driver.manage().window().maximize();
-       driver .get(prop.getProperty("URL"));
-		driver.findElement(By.name("user_name")).sendKeys(prop.getProperty("UN"));
-		driver.findElement(By.name("user_password")).sendKeys(prop.getProperty("PW"));
-		driver.findElement(By.id("submitButton")).click();
-		driver.findElement(By.xpath("//a[.='Contacts']")).click();
-		driver.findElement(By.xpath("//img[@title='Create Contact...']")).click();
-		Select sel=new Select(driver.findElement(By.xpath("//select[@name='salutationtype']")));
-		sel.selectByIndex(1);
-		Thread.sleep(2000);
-//		String firstname = "Ram";
-//		String lastname="Prasad";
-		FileInputStream bis = new FileInputStream(IAutoconstants.excelpath);
-		Workbook bk= WorkbookFactory.create(bis);
-		String s=bk.getSheet("Sheet1").getRow(2).getCell(0).getStringCellValue();
-		
+		WebDriver driver;
+		String Browser=prop.getProperty("Browser");
+		if(Browser.equals("Chrome")) {
+			WebDriverManager.chromedriver().setup();
+			driver=new ChromeDriver();
 
-		driver.findElement(By.xpath("//input[@class='detailedViewTextBox']")).sendKeys(s);
-		String f=bk.getSheet("Sheet1").getRow(4).getCell(0).getStringCellValue();
-		driver.findElement(By.name("lastname")).sendKeys(f);
-		driver.findElement(By.xpath("//input[@name='account_id']/../img")).click();
-		Set<String> ven = driver.getWindowHandles();
-		Iterator<String> it=ven.iterator();
-		String parent=it.next();
-		String child=it.next();
-		Thread.sleep(1000);
-		driver.switchTo().window(child);
+		}
+
+		else  if(Browser.equals("Firefox")) {
+			driver=new FirefoxDriver();
+			WebDriverManager.firefoxdriver().setup();
+		}
+		else  if(Browser.equals("Edge")) {
+			driver=new EdgeDriver();
+			WebDriverManager.firefoxdriver().setup();
+		}
+		else  {
+			driver=new FirefoxDriver();
+			WebDriverManager.firefoxdriver().setup();
+		}
+		driver.manage().window().maximize();
+		WebDriverUtility wl = new WebDriverUtility();
+		wl.pageloadtimeout(driver);
+
+		driver .get(prop.getProperty("URL"));
+		LoginPage login = new LoginPage(driver);
+
+		login.getUsernametxtfld().sendKeys(prop.getProperty("UN"));
+		login.getPasswordtxtfld().sendKeys(prop.getProperty("PW"));
+		login.getLoginbtn().click();
+
+		HomePage HP = new HomePage(driver);
+		HP.getContactslink().click();
+		driver.findElement(By.xpath("//img[@title='Create Contact...']")).click();
+
+		CreateConPage ccn =new CreateConPage(driver);
+		WebElement Element=  ccn.getSaltypedd();
+		wl.Selectfromdd(2, Element);
+
 		Thread.sleep(2000);
-		String g=bk.getSheet("Sheet1").getRow(6).getCell(0).getStringCellValue();
+		JavaUtil js = new JavaUtil();
+		int num=js.generateRandomNumber();
+
+		String Firstname="KR"+num;
+		String Lastname="Rk"+num;
+		ccn.getFirstname().sendKeys(Firstname);
+		ccn.getLastname().sendKeys(Lastname);
+		driver.findElement(By.xpath("//input[@name='account_id']/../img")).click();	
+
+		wl.Switchtowindow("Accounts", driver);
 		Thread.sleep(2000);
-		driver.findElement(By.id("search_txt")).sendKeys(g);
-	
+		driver.findElement(By.xpath("//input[@name='search_text']")).sendKeys("Rajendra");
+
 		driver.findElement(By.xpath("//input[@name='search']")).click();
 		Thread.sleep(2000);
 		driver.findElement(By.xpath("//a[@id='1']")).click();
 		Thread.sleep(2000);
-		driver.switchTo().window(parent);
+		wl.Switchtowindow("Contacts", driver);
 		Thread.sleep(2000);
-		driver.findElement(By.xpath("//input[@class='crmButton small save']")).click();
+		ccn.getSvbtn().click();
 		Thread.sleep(3000);
-		driver.findElement(By.xpath("//a[.='Contacts']")).click();
+		HP.getContactslink().click();
 		Thread.sleep(2000);
+
+		driver.findElement(By.xpath("//input[@class='txtBox']")).sendKeys(Firstname);
+		Thread.sleep(2000);
+		WebElement ele = ccn.getContypesdd();
+		wl.Selectfromdd("firstname", ele);
 		
-		driver.findElement(By.xpath("//input[@class='txtBox']")).sendKeys(s);
-		Select sl=new Select(driver.findElement(By.id("bas_searchfield")));
-		sl.selectByValue("firstname");
-		driver.findElement(By.xpath("//input[@class='crmbutton small create']")).click();
-		if(s.equals("sjdsdj"))
+		
+		ccn.getSrchbtn().click();
+		if(Firstname.contains("KR"))
 		{
 			System.out.println("Tc pass");
 		}
@@ -101,9 +110,9 @@ public class Tc03_contacts {
 			System.out.println("Tc fail");
 		}
 		Actions aa = new Actions(driver);
-		WebElement ss=driver.findElement(By.xpath("//img[@src='themes/softed/images/user.PNG']"));
-		aa.moveToElement(ss).build().perform();
-		driver.findElement(By.xpath("//a[.='Sign Out']")).click();
+		WebElement SO=HP.getSignoutimg();
+		wl.movetolement(driver, SO);
+		HP.getSignoutlink().click();
 		driver.close();
 
 
